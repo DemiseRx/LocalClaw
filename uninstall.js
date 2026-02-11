@@ -15,7 +15,7 @@ module.exports = {
     {
       method: "shell.run",
       params: {
-        message: "rmdir /s /q .localclaw 2>nul || true"
+        message: "rm -rf .localclaw"
       }
     }
   ]

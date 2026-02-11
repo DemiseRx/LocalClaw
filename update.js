@@ -15,7 +15,7 @@ module.exports = {
     {
       method: "shell.run",
       params: {
-        message: "node scripts/render-local-config.mjs"
+        message: "python3 scripts/render_local_config.py"
       }
     }
   ]
