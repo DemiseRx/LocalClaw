@@ -1,0 +1,25 @@
+{
+  "run": [
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "npm i -g openclaw@latest"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "message": [
+          "node scripts/render-local-config.mjs"
+        ]
+      }
+    },
+    {
+      "method": "modal",
+      "params": {
+        "title": "Install Complete (Local-only preset)",
+        "description": "LocalClaw is configured for localhost-only OpenAI-compatible servers (Ollama or LM Studio). Start your local model server, then click Start."
+      }
+    }
+  ]
+}
