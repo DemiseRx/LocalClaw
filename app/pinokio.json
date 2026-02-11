@@ -1,0 +1,5 @@
+{
+  "title": "LocalClaw (OpenClaw Local-Only)",
+  "description": "Community Pinokio package for OpenClaw preconfigured to use localhost-only Ollama or LM Studio endpoints.",
+  "icon": "icon.svg"
+}
