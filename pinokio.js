@@ -7,7 +7,7 @@ module.exports = {
       href: "install.json",
     }, {
       icon: "fa-solid fa-circle-play",
-      text: "Start",
+      text: "Start (Auto detect Ollama/LM Studio)",
       href: "start.js",
     }, {
       icon: "fa-solid fa-vial",
