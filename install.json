@@ -1,0 +1,23 @@
+{
+  "run": [
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "npm i -g openclaw@latest"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "node scripts/render-local-config.mjs"
+      }
+    },
+    {
+      "method": "modal",
+      "params": {
+        "title": "Install Complete (Local-only preset)",
+        "description": "Configured for localhost-only Ollama/LM Studio endpoints. Click Start after your local server is running."
+      }
+    }
+  ]
+}
