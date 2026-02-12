@@ -10,8 +10,7 @@
       "method": "shell.run",
       "params": {
         "message": [
-          "mkdir -p .localclaw/state",
-          "python3 scripts/render_local_config.py"
+          "node scripts/render-local-config.mjs"
         ]
       }
     },
