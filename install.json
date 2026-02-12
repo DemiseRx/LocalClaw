@@ -1,0 +1,34 @@
+{
+  "run": [
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "npm i -g openclaw@latest"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "input": true,
+        "message": "openclaw onboard --skip-ui",
+        "on": [{
+          "event": "/.*onboarding complete.*/i",
+          "kill": true
+        }]
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "node scripts/render-local-config.mjs"
+      }
+    },
+    {
+      "method": "modal",
+      "params": {
+        "title": "Onboarding Complete (Local-only preset)",
+        "description": "LocalClaw rewrote the OpenClaw config to localhost-only providers (Ollama/LM Studio). Start your local server, then click Start."
+      }
+    }
+  ]
+}
