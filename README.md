@@ -13,8 +13,8 @@ No cloud endpoints are configured by default.
   - rejects non-local hosts,
   - seeds OpenClaw with OpenAI-compatible local model definitions,
   - writes config to `.localclaw/openclaw.local.json`.
-- Auto backend detection (`scripts/start-localclaw.mjs`) for Ollama vs LM Studio (cross-platform, including Windows Pinokio).
-- A reproducible smoke test (`scripts/smoke-test-local.mjs`) using a mock OpenAI-compatible server (`scripts/mock-openai-server.mjs`) that auto-responds with `LOCAL_TEST_PHRASE`.
+- Auto backend detection (`scripts/start_localclaw.sh`) for Ollama vs LM Studio.
+- A reproducible smoke test (`scripts/smoke_test_local.sh`) using a mock OpenAI-compatible server (`scripts/mock_openai_server.py`) that auto-responds with `LOCAL_TEST_PHRASE`.
 - Pinokio menu entries for Install / Start / Test / Update / Uninstall.
 
 ## Pinokio usage
@@ -73,8 +73,3 @@ OpenClaw users commonly run multi-channel automations and cloud providers by def
 - hardened localhost-only guardrails,
 - backend auto-detection for common local inference runtimes,
 - deterministic API emulation tests for safer packaging/sharing.
-
-
-## Windows/Pinokio compatibility note
-
-This repo now includes an `app/` mirror of the package files. Some Pinokio Windows flows run apps from `<repo>/app` and fall back to launching `app.py` if script manifests are missing there. Including `app/pinokio.js` and companion files helps avoid that fallback, and `app/app.py` is also included as a safe compatibility launcher when Pinokio still invokes `python app.py` on Windows.
