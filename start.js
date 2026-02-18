@@ -4,15 +4,26 @@ module.exports = {
     {
       method: "shell.run",
       params: {
-        message: ["node scripts/start-localclaw.mjs"],
-        on: [{ event: "/listening on.*ws:\\/\\/([0-9.:]+)/", done: true }]
+        message: [
+          "bash scripts/start_localclaw.sh"
+        ],
+        on: [{
+          event: "/listening on.*ws:\\/\\/([0-9.:]+)/",
+          done: true
+        }]
       }
     },
     {
       method: "shell.run",
       params: {
-        message: ["node scripts/open-dashboard.mjs"],
-        on: [{ event: "/http:\\/\\/[^ ]+ /", done: true }]
+        message: [
+          "export OPENCLAW_CONFIG_PATH=$PWD/.localclaw/openclaw.local.json",
+          "openclaw dashboard"
+        ],
+        on: [{
+          event: "/http:\\/\\/[^ ]+ /",
+          done: true
+        }]
       }
     }
   ]

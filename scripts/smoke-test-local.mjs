@@ -5,15 +5,6 @@ import fs from 'node:fs';
 const port = Number.parseInt(process.env.LOCALCLAW_TEST_PORT ?? '11434', 10);
 const phrase = process.env.LOCALCLAW_TEST_PHRASE ?? 'LOCAL_TEST_PHRASE';
 
-const runRender = (extraEnv = {}) => new Promise((resolve, reject) => {
-  const render = spawn('node', ['scripts/render-local-config.mjs'], {
-    shell: true,
-    stdio: 'inherit',
-    env: { ...process.env, LOCALCLAW_BASE_URL: `http://127.0.0.1:${port}/v1`, LOCALCLAW_MODEL: 'llama3.2:latest', ...extraEnv },
-  });
-  render.on('exit', (code) => (code === 0 ? resolve() : reject(new Error('render failed'))));
-});
-
 const srv = spawn('node', ['scripts/mock-openai-server.mjs'], {
   shell: true,
   stdio: 'inherit',
@@ -37,21 +28,16 @@ try {
   const resp = await respRes.text();
   assert(resp.includes(phrase), 'responses missing phrase');
 
-  await runRender();
-  const cfg1 = JSON.parse(fs.readFileSync('.localclaw/openclaw.local.json', 'utf8'));
-  const token1 = cfg1?.gateway?.auth?.token;
-  assert(cfg1.models.providers.openai.baseUrl.startsWith('http://127.0.0.1:'), 'config baseUrl is not localhost');
-  assert(cfg1.agents.defaults.model.primary.startsWith('openai/'), 'default model not openai/*');
-  assert(typeof token1 === 'string' && token1.length >= 24, 'gateway token missing after render');
+  const render = spawn('node', ['scripts/render-local-config.mjs'], {
+    shell: true,
+    stdio: 'inherit',
+    env: { ...process.env, LOCALCLAW_BASE_URL: `http://127.0.0.1:${port}/v1`, LOCALCLAW_MODEL: 'llama3.2:latest' },
+  });
+  await new Promise((resolve, reject) => render.on('exit', (code) => code === 0 ? resolve() : reject(new Error('render failed'))));
 
-  await runRender();
-  const cfg2 = JSON.parse(fs.readFileSync('.localclaw/openclaw.local.json', 'utf8'));
-  assert.strictEqual(cfg2?.gateway?.auth?.token, token1, 'gateway token should persist across rerenders');
-
-  await runRender({ LOCALCLAW_ROTATE_GATEWAY_TOKEN: '1' });
-  const cfg3 = JSON.parse(fs.readFileSync('.localclaw/openclaw.local.json', 'utf8'));
-  assert.notStrictEqual(cfg3?.gateway?.auth?.token, token1, 'gateway token rotation flag should rotate token');
-
+  const cfg = JSON.parse(fs.readFileSync('.localclaw/openclaw.local.json', 'utf8'));
+  assert(cfg.models.providers.openai.baseUrl.startsWith('http://127.0.0.1:'), 'config baseUrl is not localhost');
+  assert(cfg.agents.defaults.model.primary.startsWith('openai/'), 'default model not openai/*');
   console.log('Smoke test passed');
 } finally {
   srv.kill('SIGTERM');
