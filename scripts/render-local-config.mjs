@@ -8,19 +8,6 @@ const modelId = (process.env.LOCALCLAW_MODEL ?? 'llama3.2:latest').trim() || 'll
 const stateDir = process.env.LOCALCLAW_STATE_DIR ?? path.join(cwd, '.localclaw', 'state');
 const configPath = process.env.OPENCLAW_CONFIG_PATH ?? path.join(cwd, '.localclaw', 'openclaw.local.json');
 
-const getExistingGatewayToken = () => {
-  if (!fs.existsSync(configPath)) return null;
-
-  try {
-    const raw = fs.readFileSync(configPath, 'utf8');
-    const parsedCfg = JSON.parse(raw);
-    const existing = parsedCfg?.gateway?.auth?.token;
-    return typeof existing === 'string' && existing.trim() ? existing.trim() : null;
-  } catch {
-    return null;
-  }
-};
-
 let parsed;
 try {
   parsed = new URL(baseUrlRaw);
@@ -54,7 +41,7 @@ const seedModels = ['llama3.2:latest', 'qwen2.5:latest', 'mistral:latest', 'phi4
 if (!seedModels.includes(modelId)) seedModels.unshift(modelId);
 
 const modelsMap = Object.fromEntries(seedModels.map((m) => [`openai/${m}`, { alias: m }]));
-const token = process.env.LOCALCLAW_GATEWAY_TOKEN ?? getExistingGatewayToken() ?? crypto.randomBytes(24).toString('hex');
+const token = process.env.LOCALCLAW_GATEWAY_TOKEN ?? crypto.randomBytes(24).toString('hex');
 const gatewayPort = Number.parseInt(process.env.LOCALCLAW_GATEWAY_PORT ?? '18789', 10);
 
 const cfg = {

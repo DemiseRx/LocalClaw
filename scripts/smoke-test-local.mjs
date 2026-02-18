@@ -38,19 +38,6 @@ try {
   const cfg = JSON.parse(fs.readFileSync('.localclaw/openclaw.local.json', 'utf8'));
   assert(cfg.models.providers.openai.baseUrl.startsWith('http://127.0.0.1:'), 'config baseUrl is not localhost');
   assert(cfg.agents.defaults.model.primary.startsWith('openai/'), 'default model not openai/*');
-
-  const firstToken = cfg.gateway.auth.token;
-  assert(typeof firstToken === 'string' && firstToken.length > 0, 'gateway token missing');
-
-  const rerender = spawn('node', ['scripts/render-local-config.mjs'], {
-    shell: true,
-    stdio: 'inherit',
-    env: { ...process.env, LOCALCLAW_BASE_URL: `http://127.0.0.1:${port}/v1`, LOCALCLAW_MODEL: 'llama3.2:latest' },
-  });
-  await new Promise((resolve, reject) => rerender.on('exit', (code) => code === 0 ? resolve() : reject(new Error('rerender failed'))));
-
-  const cfg2 = JSON.parse(fs.readFileSync('.localclaw/openclaw.local.json', 'utf8'));
-  assert(cfg2.gateway.auth.token === firstToken, 'gateway token changed between renders');
   console.log('Smoke test passed');
 } finally {
   srv.kill('SIGTERM');
