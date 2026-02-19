@@ -3,7 +3,7 @@ module.exports = {
     {
       method: "shell.run",
       params: {
-        message: "bash scripts/smoke_test_local.sh"
+        message: "node scripts/smoke-test-local.mjs"
       }
     },
     {
