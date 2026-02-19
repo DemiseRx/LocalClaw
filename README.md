@@ -1,68 +1,75 @@
 # LocalClaw
 
-LocalClaw is a Pinokio package based on `cocktailpeanut/clawdbot.pinokio`, modified only to run OpenClaw against **localhost** model endpoints.
+LocalClaw is a Pinokio package that adapts OpenClaw for **strictly local model usage** with:
 
-## Installer check (baseline + modification)
+- **Ollama** (`http://127.0.0.1:11434/v1`)
+- **LM Studio** (`http://127.0.0.1:1234/v1`)
 
-Yes — the project has an installer (`install.json`).
+No cloud endpoints are configured by default.
 
-- We **copied the upstream installer flow** from `clawdbot.pinokio`:
-  1. `npm i -g openclaw@latest`
-  2. `openclaw onboard --skip-ui`
-  3. completion modal
-- Then we made the **minimum local-only modification**:
-  - inserted `node scripts/render-local-config.mjs` immediately after onboarding so the generated OpenClaw config is overwritten with localhost-only provider settings.
+## What this package adds
 
-This preserves upstream onboarding behavior while enforcing local models.
+- A local-only config renderer (`scripts/render_local_config.py`) that:
+  - rejects non-local hosts,
+  - seeds OpenClaw with OpenAI-compatible local model definitions,
+  - writes config to `.localclaw/openclaw.local.json`.
+- Auto backend detection (`scripts/start_localclaw.sh`) for Ollama vs LM Studio.
+- A reproducible smoke test (`scripts/smoke_test_local.sh`) using a mock OpenAI-compatible server (`scripts/mock_openai_server.py`) that auto-responds with `LOCAL_TEST_PHRASE`.
+- Pinokio menu entries for Install / Start / Test / Update / Uninstall.
 
-## Local-only behavior
+## Pinokio usage
 
-- Auto-detects a local OpenAI-compatible server:
-  - Ollama: `http://127.0.0.1:11434/v1`
-  - LM Studio: `http://127.0.0.1:1234/v1`
-- Rejects non-local hosts (`127.0.0.1`, `localhost`, `::1` only).
-- Generates a dedicated local config at `.localclaw/openclaw.local.json`.
+1. Click **Install**.
+2. Start either:
+   - Ollama with an OpenAI-compatible endpoint (`/v1`), or
+   - LM Studio local server.
+3. Click **Start (Auto detect Ollama/LM Studio)**.
+4. Optionally run **Local API smoke test**.
 
-## Pinokio flow
+## Runtime overrides
 
-1. **Install** (installs `openclaw`, runs onboarding, then writes local-only config).
-2. Start Ollama or LM Studio local server.
-3. **Start** (detects local backend, starts gateway + dashboard).
-4. Optional: **Local API smoke test**.
-
-## Environment overrides
+You can change behavior with environment variables:
 
 - `LOCALCLAW_BACKEND=auto|ollama|lmstudio`
 - `LOCALCLAW_BASE_URL=http://127.0.0.1:11434/v1`
-- `LOCALCLAW_MODEL=lfm2.5-1.2b`
-- `LOCALCLAW_API_MODE=openai-chat|openai-completions`
+- `LOCALCLAW_MODEL=llama3.2:latest`
 - `LOCALCLAW_GATEWAY_PORT=18789`
 
+## Failure modes & mitigations
 
-## LM Studio LFM2.5 compatibility
+### 1) OpenClaw reports unknown model
+OpenClaw validates model IDs against configured provider models.
 
-- Startup now queries `/v1/models` and auto-selects an available local model, preferring `liquid/lfm2.5-1.2b` (and `@q8_0`) then other Liquid LFM2 1.2B IDs.
-- For LM Studio backends, LocalClaw defaults API mode to `openai-chat` for better chat/tool-call response compatibility.
-- If `LOCALCLAW_MODEL` is set to a model that LM Studio is not serving (for example stale `llama3.2:latest`), LocalClaw now falls back automatically to a currently served model instead of failing chat calls.
-- You can still force an exact model with `LOCALCLAW_MODEL` if that model exists in `/v1/models`.
+**Mitigation:** set `LOCALCLAW_MODEL=<your-local-model-id>` and rerun Start. The config renderer injects that model ID into provider definitions.
 
-## Verification of app structure (`app.py` concern)
+### 2) Local server not detected in auto mode
+Auto mode checks `11434` then `1234`.
 
-This repo intentionally does **not** use `app.py` and does not include an `app/` mirror.
+**Mitigation:** set `LOCALCLAW_BACKEND` explicitly or set `LOCALCLAW_BASE_URL` directly.
 
-- Entry points are Pinokio JS/JSON manifests in the repository root:
-  - `pinokio.js`, `install.json`, `start.js`, `update.js`, `uninstall.js`, `test.js`.
-- Runtime behavior is implemented by Node scripts in `scripts/`.
-- There are no `python app.py` commands in this repo.
+### 3) Accidental remote endpoint usage
+Strict local mode blocks non-local hosts.
 
-If you still see Pinokio attempting `python app.py`, it usually means your local Pinokio cache has an older checkout.
+**Mitigation:** only `127.0.0.1`, `localhost`, and `::1` are allowed by config generation.
 
-Recommended cleanup:
+### 4) Endpoint compatibility differences
+Some OpenAI-compatible servers support `/v1/chat/completions` only.
 
-1. Stop the app in Pinokio.
-2. Remove the existing local app folder/cache for this repo.
-3. Reinstall from the updated Git branch/commit.
+**Mitigation:** LocalClaw config uses `openai-completions` API mode for compatibility.
 
-## Gateway token stability
+## Community dashboard visibility (Pinokio/GitHub)
 
-`render-local-config.mjs` now preserves the existing `gateway.auth.token` from `.localclaw/openclaw.local.json` across reruns, unless you explicitly set `LOCALCLAW_GATEWAY_TOKEN`. This prevents dashboard/device-token mismatch errors after Pinokio restarts.
+To maximize visibility when published:
+
+- Keep `pinokio.js`, `pinokio.json`, and `icon.svg` in the repository root.
+- Use a clear `title` + `description` in `pinokio.json`.
+- Include a concise README and screenshots if/when UI behavior changes.
+- Tag the GitHub repo clearly (`pinokio`, `openclaw`, `ollama`, `lmstudio`, `local-llm`) and provide release notes so community users understand what is local-only.
+
+## Notes on OpenClaw usage patterns and added gaps
+
+OpenClaw users commonly run multi-channel automations and cloud providers by default. This package fills local-first gaps by adding:
+
+- hardened localhost-only guardrails,
+- backend auto-detection for common local inference runtimes,
+- deterministic API emulation tests for safer packaging/sharing.

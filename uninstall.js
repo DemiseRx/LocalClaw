@@ -3,13 +3,19 @@ module.exports = {
     {
       method: "shell.run",
       params: {
-        message: "openclaw uninstall --all --yes"
+        message: "openclaw uninstall --all --yes || true"
       }
     },
     {
       method: "shell.run",
       params: {
-        message: "npm uninstall -g openclaw"
+        message: "npm uninstall -g openclaw || true"
+      }
+    },
+    {
+      method: "shell.run",
+      params: {
+        message: "rm -rf .localclaw"
       }
     }
   ]
