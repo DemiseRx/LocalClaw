@@ -1,0 +1,95 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+
+const cwd = process.cwd();
+const baseUrlRaw = (process.env.LOCALCLAW_BASE_URL ?? 'http://127.0.0.1:11434/v1').replace(/\/$/, '');
+const modelId = (process.env.LOCALCLAW_MODEL ?? 'lfm2.5-1.2b').trim() || 'lfm2.5-1.2b';
+const apiMode = (process.env.LOCALCLAW_API_MODE ?? 'openai-chat').trim() || 'openai-chat';
+const stateDir = process.env.LOCALCLAW_STATE_DIR ?? path.join(cwd, '.localclaw', 'state');
+const configPath = process.env.OPENCLAW_CONFIG_PATH ?? path.join(cwd, '.localclaw', 'openclaw.local.json');
+
+const getExistingGatewayToken = () => {
+  if (!fs.existsSync(configPath)) return null;
+
+  try {
+    const raw = fs.readFileSync(configPath, 'utf8');
+    const parsedCfg = JSON.parse(raw);
+    const existing = parsedCfg?.gateway?.auth?.token;
+    return typeof existing === 'string' && existing.trim() ? existing.trim() : null;
+  } catch {
+    return null;
+  }
+};
+
+let parsed;
+try {
+  parsed = new URL(baseUrlRaw);
+} catch {
+  throw new Error(`LOCALCLAW_BASE_URL must be a valid URL, got: ${baseUrlRaw}`);
+}
+if (!['http:', 'https:'].includes(parsed.protocol)) {
+  throw new Error(`LOCALCLAW_BASE_URL must be http(s), got: ${baseUrlRaw}`);
+}
+if (!['127.0.0.1', 'localhost', '::1'].includes(parsed.hostname)) {
+  throw new Error(`LOCALCLAW refuses non-local host: ${parsed.hostname}`);
+}
+
+fs.mkdirSync(path.dirname(configPath), { recursive: true });
+fs.mkdirSync(stateDir, { recursive: true });
+const workspace = path.join(stateDir, 'workspace');
+fs.mkdirSync(workspace, { recursive: true });
+
+const modelDef = (id) => ({
+  id,
+  name: id,
+  api: apiMode,
+  input: ['text'],
+  reasoning: false,
+  cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+  contextWindow: 131072,
+  maxTokens: 8192,
+});
+
+const seedModels = ['liquid/lfm2.5-1.2b', 'liquid/lfm2.5-1.2b@q8_0', 'liquid/lfm2-1.2b', 'lfm2.5-1.2b', 'lfm2-1.2b', 'openai/gpt-oss-20b', 'gpt-oss:20b', 'qwen2.5:latest', 'mistral:latest', 'phi4:latest'];
+if (!seedModels.includes(modelId)) seedModels.unshift(modelId);
+
+const modelsMap = Object.fromEntries(seedModels.map((m) => [`openai/${m}`, { alias: m }]));
+const token = process.env.LOCALCLAW_GATEWAY_TOKEN ?? getExistingGatewayToken() ?? crypto.randomBytes(24).toString('hex');
+const gatewayPort = Number.parseInt(process.env.LOCALCLAW_GATEWAY_PORT ?? '18789', 10);
+
+const cfg = {
+  messages: { ackReactionScope: 'group-mentions' },
+  agents: {
+    defaults: {
+      workspace,
+      maxConcurrent: 4,
+      subagents: { maxConcurrent: 8 },
+      compaction: { mode: 'safeguard' },
+      models: modelsMap,
+      model: { primary: `openai/${modelId}` },
+    },
+  },
+  gateway: {
+    mode: 'local',
+    bind: 'loopback',
+    port: Number.isFinite(gatewayPort) ? gatewayPort : 18789,
+    auth: { mode: 'token', token },
+    tailscale: { mode: 'off', resetOnExit: false },
+  },
+  models: {
+    mode: 'merge',
+    providers: {
+      openai: {
+        baseUrl: baseUrlRaw,
+        api: apiMode,
+        authHeader: false,
+        apiKey: 'local-only',
+        models: seedModels.map(modelDef),
+      },
+    },
+  },
+};
+
+fs.writeFileSync(configPath, `${JSON.stringify(cfg, null, 2)}\n`, 'utf8');
+console.log(configPath);
