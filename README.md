@@ -57,6 +57,19 @@ Some OpenAI-compatible servers support `/v1/chat/completions` only.
 
 **Mitigation:** LocalClaw config uses `openai-completions` API mode for compatibility.
 
+### 5) Gateway auth token changes every restart (disconnect loop)
+Gateway clients rely on a stable token. If it changes every startup, dashboard/tool auth can flap.
+
+**Mitigation:** `render-local-config.mjs` now reuses token sources in this order:
+1. `LOCALCLAW_GATEWAY_TOKEN` (explicit override)
+2. existing `.localclaw/openclaw.local.json` token
+3. `.localclaw/gateway.token`
+4. new random token
+
+The effective token is always written back to `.localclaw/gateway.token` to keep restarts stable.
+
+**Intentional rotation:** delete `.localclaw/gateway.token` and `.localclaw/openclaw.local.json`, or set a new `LOCALCLAW_GATEWAY_TOKEN`.
+
 ## Community dashboard visibility (Pinokio/GitHub)
 
 To maximize visibility when published:
