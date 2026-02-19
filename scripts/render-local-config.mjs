@@ -7,6 +7,7 @@ const baseUrlRaw = (process.env.LOCALCLAW_BASE_URL ?? 'http://127.0.0.1:11434/v1
 const modelId = (process.env.LOCALCLAW_MODEL ?? 'llama3.2:latest').trim() || 'llama3.2:latest';
 const stateDir = process.env.LOCALCLAW_STATE_DIR ?? path.join(cwd, '.localclaw', 'state');
 const configPath = process.env.OPENCLAW_CONFIG_PATH ?? path.join(cwd, '.localclaw', 'openclaw.local.json');
+const tokenFilePath = process.env.LOCALCLAW_GATEWAY_TOKEN_FILE ?? path.join(cwd, '.localclaw', 'gateway.token');
 
 let parsed;
 try {
@@ -23,6 +24,7 @@ if (!['127.0.0.1', 'localhost', '::1'].includes(parsed.hostname)) {
 
 fs.mkdirSync(path.dirname(configPath), { recursive: true });
 fs.mkdirSync(stateDir, { recursive: true });
+fs.mkdirSync(path.dirname(tokenFilePath), { recursive: true });
 const workspace = path.join(stateDir, 'workspace');
 fs.mkdirSync(workspace, { recursive: true });
 
@@ -41,7 +43,26 @@ const seedModels = ['llama3.2:latest', 'qwen2.5:latest', 'mistral:latest', 'phi4
 if (!seedModels.includes(modelId)) seedModels.unshift(modelId);
 
 const modelsMap = Object.fromEntries(seedModels.map((m) => [`openai/${m}`, { alias: m }]));
-const token = process.env.LOCALCLAW_GATEWAY_TOKEN ?? crypto.randomBytes(24).toString('hex');
+const readToken = (v) => (typeof v === 'string' ? v.trim() : '');
+const explicitToken = readToken(process.env.LOCALCLAW_GATEWAY_TOKEN);
+
+let existingConfigToken = '';
+if (fs.existsSync(configPath)) {
+  try {
+    const existingConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    existingConfigToken = readToken(existingConfig?.gateway?.auth?.token);
+  } catch {
+    // Ignore invalid existing config and continue with lower-priority token sources.
+  }
+}
+
+let fileToken = '';
+if (fs.existsSync(tokenFilePath)) {
+  fileToken = readToken(fs.readFileSync(tokenFilePath, 'utf8'));
+}
+
+const token = explicitToken || existingConfigToken || fileToken || crypto.randomBytes(24).toString('hex');
+fs.writeFileSync(tokenFilePath, `${token}\n`, 'utf8');
 const gatewayPort = Number.parseInt(process.env.LOCALCLAW_GATEWAY_PORT ?? '18789', 10);
 
 const cfg = {
