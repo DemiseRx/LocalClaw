@@ -4,27 +4,9 @@ import crypto from 'node:crypto';
 
 const cwd = process.cwd();
 const baseUrlRaw = (process.env.LOCALCLAW_BASE_URL ?? 'http://127.0.0.1:11434/v1').replace(/\/$/, '');
-const modelId = (process.env.LOCALCLAW_MODEL ?? 'lfm2.5-1.2b').trim() || 'lfm2.5-1.2b';
-const apiMode = (process.env.LOCALCLAW_API_MODE ?? 'openai-chat').trim() || 'openai-chat';
+const modelId = (process.env.LOCALCLAW_MODEL ?? 'llama3.2:latest').trim() || 'llama3.2:latest';
 const stateDir = process.env.LOCALCLAW_STATE_DIR ?? path.join(cwd, '.localclaw', 'state');
 const configPath = process.env.OPENCLAW_CONFIG_PATH ?? path.join(cwd, '.localclaw', 'openclaw.local.json');
-
-const getExistingConfig = () => {
-  if (!fs.existsSync(configPath)) return null;
-
-  try {
-    return JSON.parse(fs.readFileSync(configPath, 'utf8'));
-  } catch {
-    return null;
-  }
-};
-
-const existingConfig = getExistingConfig();
-
-const getExistingGatewayToken = () => {
-  const existing = existingConfig?.gateway?.auth?.token;
-  return typeof existing === 'string' && existing.trim() ? existing.trim() : null;
-};
 
 let parsed;
 try {
@@ -47,7 +29,7 @@ fs.mkdirSync(workspace, { recursive: true });
 const modelDef = (id) => ({
   id,
   name: id,
-  api: apiMode,
+  api: 'openai-completions',
   input: ['text'],
   reasoning: false,
   cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -55,20 +37,15 @@ const modelDef = (id) => ({
   maxTokens: 8192,
 });
 
-const seedModels = ['liquid/lfm2.5-1.2b', 'liquid/lfm2.5-1.2b@q8_0', 'liquid/lfm2-1.2b', 'lfm2.5-1.2b', 'lfm2-1.2b', 'openai/gpt-oss-20b', 'gpt-oss:20b', 'qwen2.5:latest', 'mistral:latest', 'phi4:latest'];
+const seedModels = ['llama3.2:latest', 'qwen2.5:latest', 'mistral:latest', 'phi4:latest', 'gpt-oss:20b'];
 if (!seedModels.includes(modelId)) seedModels.unshift(modelId);
 
 const modelsMap = Object.fromEntries(seedModels.map((m) => [`openai/${m}`, { alias: m }]));
-const token = process.env.LOCALCLAW_GATEWAY_TOKEN ?? getExistingGatewayToken() ?? crypto.randomBytes(24).toString('hex');
+const token = process.env.LOCALCLAW_GATEWAY_TOKEN ?? crypto.randomBytes(24).toString('hex');
 const gatewayPort = Number.parseInt(process.env.LOCALCLAW_GATEWAY_PORT ?? '18789', 10);
-const commandsCfg = {
-  native: existingConfig?.commands?.native ?? 'auto',
-  nativeSkills: existingConfig?.commands?.nativeSkills ?? 'auto',
-};
 
 const cfg = {
   messages: { ackReactionScope: 'group-mentions' },
-  commands: commandsCfg,
   agents: {
     defaults: {
       workspace,
@@ -91,7 +68,7 @@ const cfg = {
     providers: {
       openai: {
         baseUrl: baseUrlRaw,
-        api: apiMode,
+        api: 'openai-completions',
         authHeader: false,
         apiKey: 'local-only',
         models: seedModels.map(modelDef),

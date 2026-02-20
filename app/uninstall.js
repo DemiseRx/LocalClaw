@@ -3,19 +3,19 @@ module.exports = {
     {
       method: "shell.run",
       params: {
-        message: "git pull"
+        message: "openclaw uninstall --all --yes || true"
       }
     },
     {
       method: "shell.run",
       params: {
-        message: "npm i -g openclaw@latest"
+        message: "npm uninstall -g openclaw || true"
       }
     },
     {
       method: "shell.run",
       params: {
-        message: "python3 scripts/render_local_config.py"
+        message: "rmdir /s /q .localclaw 2>nul || true"
       }
     }
   ]
