@@ -1,51 +1,75 @@
 # LocalClaw
 
-LocalClaw is a Pinokio wrapper based on `cocktailpeanut/clawdbot.pinokio` that keeps OpenClaw gateway/tooling behavior intact while routing inference to a local LM Studio/Ollama OpenAI-compatible endpoint.
+LocalClaw is a Pinokio package that adapts OpenClaw for **strictly local model usage** with:
 
-## What this wrapper changes
+- **Ollama** (`http://127.0.0.1:11434/v1`)
+- **LM Studio** (`http://127.0.0.1:1234/v1`)
 
-- Installs OpenClaw from a pinned target (`OPENCLAW_INSTALL_TARGET`, default `openclaw@2026.2.17`).
-- Runs onboarding, installs Playwright Chromium dependency, then patches OpenClaw config.
-- Patches config to use `models.providers.lmstudio` with:
-  - `baseUrl` (default `http://127.0.0.1:1234/v1`)
-  - `api` (default `openai-responses`)
-  - discovered/default model id from `/v1/models`
-- Sets `agents.defaults.model.primary` to `lmstudio/<modelId>`.
-- Preserves hub/tool/skill-related settings (`commands.native`, `commands.nativeSkills`) as `auto`.
-- Preserves gateway token across reruns.
+No cloud endpoints are configured by default.
 
-## Model discovery behavior
+## What this package adds
 
-`patch-openclaw-config.mjs` selects model id in this order:
+- A local-only config renderer (`scripts/render_local_config.py`) that:
+  - rejects non-local hosts,
+  - seeds OpenClaw with OpenAI-compatible local model definitions,
+  - writes config to `.localclaw/openclaw.local.json`.
+- Auto backend detection (`scripts/start_localclaw.sh`) for Ollama vs LM Studio.
+- A reproducible smoke test (`scripts/smoke_test_local.sh`) using a mock OpenAI-compatible server (`scripts/mock_openai_server.py`) that auto-responds with `LOCAL_TEST_PHRASE`.
+- Pinokio menu entries for Install / Start / Test / Update / Uninstall.
 
-1. `LMSTUDIO_MODEL_ID` (or `LOCALCLAW_MODEL`) if provided and available.
-2. First `/v1/models` id matching `lfm2` + `1.2b` (case-insensitive), shortest id wins.
-3. First model returned by `/v1/models`.
+## Pinokio usage
 
-If no models are available, patching fails with an actionable error.
+1. Click **Install**.
+2. Start either:
+   - Ollama with an OpenAI-compatible endpoint (`/v1`), or
+   - LM Studio local server.
+3. Click **Start (Auto detect Ollama/LM Studio)**.
+4. Optionally run **Local API smoke test**.
 
-## Environment overrides
+## Runtime overrides
 
-- `OPENCLAW_INSTALL_TARGET` (e.g. `openclaw@2026.2.17` or `github:user/repo#ref`)
-- `LMSTUDIO_BASE_URL` (or `LOCALCLAW_BASE_URL` fallback)
-- `LMSTUDIO_MODEL_ID` (or `LOCALCLAW_MODEL` fallback)
-- `LOCALCLAW_API_MODE` (`openai-responses` default)
-- `LOCALCLAW_GATEWAY_PORT`
-- `LOCALCLAW_SKIP_GATEWAY=1` (test mode)
+You can change behavior with environment variables:
 
-## Verification
+- `LOCALCLAW_BACKEND=auto|ollama|lmstudio`
+- `LOCALCLAW_BASE_URL=http://127.0.0.1:11434/v1`
+- `LOCALCLAW_MODEL=llama3.2:latest`
+- `LOCALCLAW_GATEWAY_PORT=18789`
 
-Run the smoke test:
+## Failure modes & mitigations
 
-```bash
-node scripts/smoke-test-local.mjs
-```
+### 1) OpenClaw reports unknown model
+OpenClaw validates model IDs against configured provider models.
 
-It verifies:
+**Mitigation:** set `LOCALCLAW_MODEL=<your-local-model-id>` and rerun Start. The config renderer injects that model ID into provider definitions.
 
-- model endpoint reachable (`/v1/models`)
-- deterministic tool-call shape from chat endpoint
-- `/v1/responses` works
-- patched config defaults to `lmstudio/<modelId>`
-- tool/skill command settings remain enabled (`auto`)
-- gateway token is stable across reruns
+### 2) Local server not detected in auto mode
+Auto mode checks `11434` then `1234`.
+
+**Mitigation:** set `LOCALCLAW_BACKEND` explicitly or set `LOCALCLAW_BASE_URL` directly.
+
+### 3) Accidental remote endpoint usage
+Strict local mode blocks non-local hosts.
+
+**Mitigation:** only `127.0.0.1`, `localhost`, and `::1` are allowed by config generation.
+
+### 4) Endpoint compatibility differences
+Some OpenAI-compatible servers support `/v1/chat/completions` only.
+
+**Mitigation:** LocalClaw config uses `openai-completions` API mode for compatibility.
+
+## Community dashboard visibility (Pinokio/GitHub)
+
+To maximize visibility when published:
+
+- Keep `pinokio.js`, `pinokio.json`, and `icon.svg` in the repository root.
+- Use a clear `title` + `description` in `pinokio.json`.
+- Include a concise README and screenshots if/when UI behavior changes.
+- Tag the GitHub repo clearly (`pinokio`, `openclaw`, `ollama`, `lmstudio`, `local-llm`) and provide release notes so community users understand what is local-only.
+
+## Notes on OpenClaw usage patterns and added gaps
+
+OpenClaw users commonly run multi-channel automations and cloud providers by default. This package fills local-first gaps by adding:
+
+- hardened localhost-only guardrails,
+- backend auto-detection for common local inference runtimes,
+- deterministic API emulation tests for safer packaging/sharing.
