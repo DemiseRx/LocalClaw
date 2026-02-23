@@ -1,0 +1,40 @@
+{
+  "run": [
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "node scripts/install-openclaw.mjs"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "input": true,
+        "message": "openclaw onboard --skip-ui",
+        "on": [{
+          "event": "/.*onboarding complete.*/i",
+          "kill": true
+        }]
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "npx playwright install chromium"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "node scripts/patch-openclaw-config.mjs"
+      }
+    },
+    {
+      "method": "modal",
+      "params": {
+        "title": "Onboarding Complete (LM Studio + hub tools)",
+        "description": "OpenClaw is configured to use your local LM Studio/Ollama model endpoint while keeping tools/skills enabled."
+      }
+    }
+  ]
+}

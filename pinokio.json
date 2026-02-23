@@ -1,0 +1,5 @@
+{
+  "title": "OpenClaw (aka ClawdBot)",
+  "description": "The AI that actually does things (localhost-only preset for Ollama/LM Studio)",
+  "icon": "icon.svg"
+}
