@@ -1,0 +1,34 @@
+{
+  "run": [
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "node scripts/install-openclaw.mjs"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "input": true,
+        "message": "openclaw onboard --skip-ui",
+        "on": [{
+          "event": "/.*onboarding complete.*/i",
+          "kill": true
+        }]
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "node scripts/install-skill-prereqs.mjs"
+      }
+    },
+    {
+      "method": "modal",
+      "params": {
+        "title": "Quick Start Complete",
+        "description": "Baseline OpenClaw quick start is complete. To route model inference to LM Studio/Ollama localhost, run 'Enable/refresh local model config'."
+      }
+    }
+  ]
+}
