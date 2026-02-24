@@ -1,22 +1,18 @@
 module.exports = {
   version: "5.0",
-  menu: async (kernel, info) => {
+  menu: async () => {
     return [{
       icon: "fa-solid fa-plug",
-      text: "Install (Quick Start baseline)",
-      href: "install.quickstart.json",
-    }, {
-      icon: "fa-solid fa-house-signal",
-      text: "Install (Quick Start + Local Model)",
+      text: "Install",
       href: "install.json",
     }, {
-      icon: "fa-solid fa-wrench",
-      text: "Enable/refresh local model config",
-      href: "local-model.json",
-    }, {
       icon: "fa-solid fa-circle-play",
-      text: "Start",
+      text: "Start (Auto detect Ollama/LM Studio)",
       href: "start.js",
+    }, {
+      icon: "fa-solid fa-vial",
+      text: "Local API smoke test",
+      href: "test.js",
     }, {
       icon: "fa-solid fa-arrows-rotate",
       text: "Update",
