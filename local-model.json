@@ -1,0 +1,17 @@
+{
+  "run": [
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "node scripts/patch-openclaw-config.mjs"
+      }
+    },
+    {
+      "method": "modal",
+      "params": {
+        "title": "Local model config applied",
+        "description": "Default provider/model now point to localhost LM Studio/Ollama while hub tools/skills remain enabled."
+      }
+    }
+  ]
+}
