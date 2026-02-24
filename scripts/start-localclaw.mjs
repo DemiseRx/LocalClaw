@@ -17,6 +17,7 @@ const canReach = async (url) => {
 const backend = process.env.LOCALCLAW_BACKEND ?? 'auto';
 let baseUrl = (process.env.LMSTUDIO_BASE_URL ?? process.env.LOCALCLAW_BASE_URL ?? '').trim();
 let resolvedBackend = backend;
+let useLocalModelFlow = true;
 
 if (!baseUrl) {
   if (backend === 'lmstudio') {
@@ -33,7 +34,9 @@ if (!baseUrl) {
       resolvedBackend = 'ollama';
       baseUrl = 'http://127.0.0.1:11434/v1';
     } else {
-      throw new Error('No local OpenAI-compatible server found on 1234 or 11434. Start LM Studio or Ollama first.');
+      useLocalModelFlow = false;
+      resolvedBackend = 'quickstart';
+      console.log('[LocalClaw] No local OpenAI-compatible server found on 1234 or 11434; using baseline quick-start gateway start.');
     }
   } else {
     throw new Error(`Unsupported LOCALCLAW_BACKEND: ${backend}`);
@@ -49,12 +52,15 @@ const env = {
   OPENCLAW_CONFIG_PATH: process.env.OPENCLAW_CONFIG_PATH ?? path.join(cwd, '.localclaw', 'openclaw.local.json'),
 };
 
-console.log(`[LocalClaw] backend=${resolvedBackend} baseUrl=${baseUrl}`);
-
-await new Promise((resolve, reject) => {
-  const patch = spawn('node', ['scripts/patch-openclaw-config.mjs'], { stdio: 'inherit', shell: true, env });
-  patch.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`patch-openclaw-config failed (${code})`))));
-});
+if (useLocalModelFlow) {
+  console.log(`[LocalClaw] backend=${resolvedBackend} baseUrl=${baseUrl}`);
+  await new Promise((resolve, reject) => {
+    const patch = spawn('node', ['scripts/patch-openclaw-config.mjs'], { stdio: 'inherit', shell: true, env });
+    patch.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`patch-openclaw-config failed (${code})`))));
+  });
+} else {
+  console.log('[LocalClaw] backend=quickstart baseUrl=(none)');
+}
 
 if (process.env.LOCALCLAW_SKIP_GATEWAY === '1') {
   console.log('[LocalClaw] LOCALCLAW_SKIP_GATEWAY=1 set; skipping gateway launch (test mode).');
