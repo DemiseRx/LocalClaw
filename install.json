@@ -1,0 +1,40 @@
+{
+  "run": [
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "node scripts/install-openclaw.mjs"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "input": true,
+        "message": "openclaw onboard --skip-ui",
+        "on": [{
+          "event": "/.*onboarding complete.*/i",
+          "kill": true
+        }]
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "node scripts/install-skill-prereqs.mjs"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "node scripts/patch-openclaw-config.mjs"
+      }
+    },
+    {
+      "method": "modal",
+      "params": {
+        "title": "Onboarding Complete (Quick Start + Local Model)",
+        "description": "Quick start settings are preserved and default model routing is patched to localhost LM Studio/Ollama."
+      }
+    }
+  ]
+}
